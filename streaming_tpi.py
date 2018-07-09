@@ -1,11 +1,11 @@
 from tweepy import Stream
 from tweepy import OAuthHandler
 from tweepy.streaming import StreamListener
-from sensitive import give_credentials
+from sensitive import give_twitter_credentials
 import sqlite3
 import json
 
-ckey , csecret, atoken, asecret = give_credentials()
+ckey , csecret, atoken, asecret = give_twitter_credentials()
 
 connection = sqlite3.connect('tweets.db')
 c = connection.cursor()
