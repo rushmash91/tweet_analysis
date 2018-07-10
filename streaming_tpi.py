@@ -1,44 +1,34 @@
 from tweepy import Stream
 from tweepy import OAuthHandler
 from tweepy.streaming import StreamListener
-from sensitive import give_twitter_credentials
-import sqlite3
+import re
 import json
+from sensitive import give_twitter_credentials
+from watson_tone_analyser import sentiment
 
-ckey , csecret, atoken, asecret = give_twitter_credentials()
-
-connection = sqlite3.connect('tweets.db')
-c = connection.cursor()
-
-
-def create_table():
-    c.execute("""CREATE TABLE IF NOT EXISTS tweets(id INT PRIMARY KEY, tweet TEXT NOT NULL, 
-user TEXT NOT NULL , user_id INT NOT NULL UNIQUE, user_location TEXT, timestamp TEXT NOT NULL )""")
+ckey, csecret, atoken, asecret = give_twitter_credentials()
 
 
-def sql_insert(id, tweet, user, user_id, user_location, timestamp):
-    try:
-        c.execute("INSERT INTO tweets(id, tweet, user, user_id, user_location, timestamp) VALUES (?, ?, ?, ?, ?, ?)",
-                  (id, tweet, user, user_id, user_location, timestamp))
-        connection.commit()
-    except Exception:
-        print('Insertion Failed')
+def cleans_tweet(tweet):
+    """clean tweet text by removing links, special characters"""
+    return ' '.join(re.sub("(@[A-Za-z0-9]+)|([^0-9A-Za-z \t]) | (\w+:\/\/\S+)", " ", tweet).split())
 
 
 class Listener(StreamListener):
-    create_table()
 
     def on_data(self, data):
-        data = json.loads(data)
-        id = data['id']
-        tweet = data['text']
-        user = data['user']['name']
-        user_id = data['user']['screen_name']
-        user_location = data['user']['location']
-        timestamp = data['created_at']
-        print(tweet)
-        sql_insert(id, tweet, user, user_id, user_location, timestamp)
-        return True
+        try:
+            data = json.loads(data)
+            raw_tweets = data['text']
+            tweet = cleans_tweet(raw_tweets)
+            print(tweet)
+            sent_json = sentiment(tweet)
+            with open("Output.txt", "a") as text_file:
+                text_file.write(sent_json + "\n")
+            print(sent_json)
+            return True
+        except:
+            pass
 
     def on_error(self, status):
         print(status)
@@ -48,7 +38,8 @@ def main():
     auth = OAuthHandler(ckey, csecret)
     auth.set_access_token(atoken, asecret)
 
-    twitterStream = Stream(auth, Listener())
+    twitterstream = Stream(auth, Listener())
+
     topics = []
 
     n = int(input('Number of topics to be filtered by : '))
@@ -57,7 +48,7 @@ def main():
         topic = input('Enter topic : ')
         topics.append(topic)
 
-    twitterStream.filter(track=topics)
+    twitterstream.filter(track=topics, languages=['en'])
 
 
 if __name__ == '__main__':

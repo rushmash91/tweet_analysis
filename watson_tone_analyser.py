@@ -1,25 +1,24 @@
 import json
 from watson_developer_cloud import ToneAnalyzerV3
-from sensitive import give_watson_credentials
 
 
-def authenticate():
-    version, username, password = give_watson_credentials()
-
+def sentiment(text):
     tone_analyzer = ToneAnalyzerV3(
-        version=version,
-        username=username,
-        password=password
+        version ='2017-09-21',
+        username ='e89947b2-8f33-4811-aad2-b8cafcf48f8d',
+        password ='6KooqVkkA57L'
     )
 
-    return tone_analyzer
+    content_type = 'application/json'
+
+    tone = tone_analyzer.tone({"text": text},content_type)
+    tone = json.dumps(tone)
+    return tone
 
 
-tone_analyzer = authenticate()
+def main():
+    print(sentiment(input('Enter the text : ')))
 
-text = input('Enter text for Tone Analysis : ')
-content_type = 'application/json'
 
-tone = tone_analyzer.tone({"text": text}, content_type)
-
-print(json.dumps(tone, indent=2))
+if __name__ == '__main__':
+    main()
